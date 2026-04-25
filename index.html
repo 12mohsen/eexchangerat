@@ -180,7 +180,7 @@ window.Dexie = Dexie;
   .cloud-title{font-size:.78rem;text-transform:uppercase;letter-spacing:1px;color:#888}
   .cloud-refresh{background:none;border:1px solid #2a2a3e;color:#4a9eff;border-radius:8px;padding:5px 12px;font-size:.75rem;cursor:pointer;transition:.2s}
   .cloud-refresh:hover{background:#1e1e2e;border-color:#4a9eff}
-  .cloud-table-wrap{background:#1e1e2e;border:1px solid #2a2a3e;border-radius:14px;overflow:hidden}
+  .cloud-table-wrap{background:#1e1e2e;border:1px solid #2a2a3e;border-radius:14px;overflow-x:auto;overflow-y:hidden}
   .cloud-table{width:100%;border-collapse:collapse;font-size:.78rem}
   .cloud-table th{background:#13131f;color:#888;font-weight:600;padding:10px 12px;text-align:right;border-bottom:1px solid #2a2a3e;letter-spacing:.5px}
   .cloud-table td{padding:10px 12px;border-bottom:1px solid #1a1a2e;color:#ccc;vertical-align:middle}
@@ -247,10 +247,12 @@ window.Dexie = Dexie;
     .auth-btn{padding:16px;font-size:1.1rem}
     .cloud-header{flex-direction:column;align-items:flex-start;gap:10px}
     .cloud-header>div{display:flex;flex-direction:column;gap:8px}
-    .cloud-table{font-size:.7rem}
-    .cloud-table th{padding:8px 6px}
-    .cloud-table td{padding:8px 6px}
-    .cloud-act{padding:4px 8px;font-size:.9rem}
+    .cloud-table-wrap{overflow-x:auto;overflow-y:visible;min-height:auto}
+    .cloud-table{font-size:.7rem;min-width:600px}
+    .cloud-table th{padding:8px 6px;white-space:nowrap}
+    .cloud-table td{padding:8px 6px;white-space:nowrap}
+    .cloud-act{padding:6px 10px;font-size:1rem;min-width:36px;min-height:36px}
+    .cloud-tafqeet{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .tx{flex-direction:column;gap:6px}
     .tx-info{font-size:.8rem}
     .del-btn{width:100%;padding:8px;margin-top:8px}
