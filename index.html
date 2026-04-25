@@ -499,7 +499,7 @@ async function submitAuth(){
       const res = await fetch(SUPABASE_URL+'/rest/v1/users', {
         method:'POST',
         headers:{ ...getSBHeaders(), 'Prefer':'return=representation' },
-        body: JSON.stringify({ username, password_hash:pwdHash, password_hint:hint||null, app_origin: 'sarf_history' })
+        body: JSON.stringify({ username, password_hash:pwdHash, password_hint:hint||null, app_origin: 'سعر الصرف' })
       });
       const data = await res.json();
       if(!res.ok){
@@ -512,7 +512,7 @@ async function submitAuth(){
           const res2 = await fetch(SUPABASE_URL+'/rest/v1/users', {
             method:'POST',
             headers:{ ...getSBHeaders(), 'Prefer':'return=representation' },
-            body: JSON.stringify({ username, password_hash:pwdHash, app_origin: 'sarf_history' })
+            body: JSON.stringify({ username, password_hash:pwdHash, app_origin: 'سعر الصرف' })
           });
           const data2 = await res2.json();
           if(!res2.ok){ setAuthMsg('⚠️ '+(data2?.message||'فشل إنشاء الحساب — تحقق من أعمدة جدول users'),'err'); return; }
@@ -616,7 +616,7 @@ function requireAuth(){
 
 async function saveToSupabase(tx){
   try{
-    const res = await fetch(SUPABASE_URL+'/rest/v1/sarf_history', {
+    const res = await fetch(SUPABASE_URL+'/rest/v1/exchangerat', {
       method:'POST',
       headers: SB_HEADERS,
       body: JSON.stringify({
@@ -642,7 +642,7 @@ async function purgeOldDeleted(){
     const cutoff=new Date(Date.now()-30*24*60*60*1000).toISOString();
     const userF = AUTH?.username ? `&user_name=eq.${encodeURIComponent(AUTH.username)}` : '';
     await fetch(
-      SUPABASE_URL+'/rest/v1/sarf_history?deleted_at=lt.'+encodeURIComponent(cutoff)+userF,
+      SUPABASE_URL+'/rest/v1/exchangerat?deleted_at=lt.'+encodeURIComponent(cutoff)+userF,
       {method:'DELETE', headers: SB_HEADERS}
     );
   }catch(e){}
@@ -653,7 +653,7 @@ async function softDeleteCloud(id){
   if(!confirmed)return;
   try{
     const res=await fetch(
-      SUPABASE_URL+'/rest/v1/sarf_history?id=eq.'+id,
+      SUPABASE_URL+'/rest/v1/exchangerat?id=eq.'+id,
       {method:'PATCH', headers:SB_HEADERS, body:JSON.stringify({deleted_at:new Date().toISOString()})}
     );
     if(!res.ok){ const t=await res.text(); console.error('delete err:',t); showToast('⚠️ تعذّر الحذف','warn'); return; }
@@ -665,7 +665,7 @@ async function softDeleteCloud(id){
 async function restoreCloud(id){
   try{
     const res=await fetch(
-      SUPABASE_URL+'/rest/v1/sarf_history?id=eq.'+id,
+      SUPABASE_URL+'/rest/v1/exchangerat?id=eq.'+id,
       {method:'PATCH', headers:SB_HEADERS, body:JSON.stringify({deleted_at:null})}
     );
     if(!res.ok){ const t=await res.text(); console.error('restore err:',t); showToast('⚠️ تعذّر الاستعادة','warn'); return; }
@@ -679,7 +679,7 @@ async function hardDeleteCloud(id){
   if(!confirmed)return;
   try{
     const res=await fetch(
-      SUPABASE_URL+'/rest/v1/sarf_history?id=eq.'+id,
+      SUPABASE_URL+'/rest/v1/exchangerat?id=eq.'+id,
       {method:'DELETE', headers:SB_HEADERS}
     );
     if(!res.ok){ showToast('⚠️ تعذّر الحذف','warn'); return; }
@@ -706,7 +706,7 @@ async function loadCloudHistory(){
   const userFilter = AUTH?.username ? `&user_name=eq.${encodeURIComponent(AUTH.username)}` : '';
   try{
     const res = await fetch(
-      SUPABASE_URL+'/rest/v1/sarf_history?select=*&'+filter+userFilter+'&order=created_at.desc&limit=20',
+      SUPABASE_URL+'/rest/v1/exchangerat?select=*&'+filter+userFilter+'&order=created_at.desc&limit=20',
       {headers: SB_HEADERS}
     );
     if(!res.ok){
