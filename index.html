@@ -823,7 +823,7 @@ async function loadCloudHistory(){
           remaining=`<span style="color:${days<7?'#f44336':'#f9a825'};font-weight:700">${days} يوم</span>`;
         }
         const cbCell = cloudSelectMode
-          ? `<td style="text-align:center"><input type="checkbox" class="cloud-row-cb" data-id="${r.id}" ${selectedCloudIds.has(r.id)?'checked':''} onchange="toggleRowSelect(this)" style="width:18px;height:18px;accent-color:#4a9eff;cursor:pointer"></td>`
+          ? `<td style="text-align:center"><input type="checkbox" class="cloud-row-cb" data-id="${r.id}" ${selectedCloudIds.has(r.id)?'checked':''} onchange="toggleRowSelect(this)" onclick="event.stopPropagation()" style="width:18px;height:18px;accent-color:#4a9eff;cursor:pointer"></td>`
           : '';
         const actions = cloudSelectMode ? '' : isTrash
           ? `<td style="white-space:nowrap"><button class="cloud-act restore" onclick="restoreCloud(${r.id})" title="استعادة">♻️</button>
