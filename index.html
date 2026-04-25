@@ -113,7 +113,9 @@ window.Dexie = Dexie;
   label{font-size:.82rem;color:#aaa;font-weight:600}
   input,select{background:#13131f;border:1px solid #2a2a3e;border-radius:8px;padding:10px 12px;color:#fff;font-size:1rem;width:100%;transition:.2s}
   input:focus,select:focus{outline:none;border-color:#4a9eff;box-shadow:0 0 0 3px rgba(74,158,255,.15)}
-  select option{background:#1e1e2e}
+  select option{background:#13131f;color:#fff;padding:8px 10px}
+  select option:hover{background:#1e1e2e}
+  select option:checked{background:#4a9eff;color:#fff}
 
   .amounts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
   .amt-box{background:#13131f;border:1px solid #2a2a3e;border-radius:10px;padding:12px}
@@ -245,6 +247,8 @@ window.Dexie = Dexie;
     .auth-box{padding:24px 20px;max-width:100%}
     .auth-field input{padding:14px 12px;font-size:1rem}
     .auth-btn{padding:16px;font-size:1.1rem}
+    select{background:#13131f;color:#fff;font-size:1.1rem;padding:14px 12px}
+    select option{background:#13131f;color:#fff;padding:12px;font-size:1.1rem}
     .cloud-header{flex-direction:column;align-items:flex-start;gap:10px}
     .cloud-header>div{display:flex;flex-direction:column;gap:8px}
     .cloud-table-wrap{overflow-x:auto;overflow-y:visible;min-height:auto}
@@ -1294,6 +1298,7 @@ function toggleCloud(){
 }
 
 requireAuth();
+fetchLiveRates(); // جلب تلقائي عند تحميل الصفحة
 setInterval(()=>{ if(AUTH) fetchLiveRates(); }, 10*60*1000); // تحديث تلقائي كل 10 دقائق
 </script>
 </body>
