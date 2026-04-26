@@ -210,6 +210,28 @@ window.Dexie = Dexie;
   .cloud-act.del:hover{background:rgba(244,67,54,.15)}
   .cloud-act.restore{color:#4caf50;border-color:rgba(76,175,80,.4)}
   .cloud-act.restore:hover{background:rgba(76,175,80,.15)}
+
+  /* زر المحذوفات العصري */
+  .cloud-trash-toggle{display:flex;align-items:center;gap:5px;background:#1a1a2e;border:1px solid rgba(244,67,54,.35);color:#f87171;border-radius:8px;padding:5px 12px;font-size:.75rem;cursor:pointer;transition:.25s;font-weight:600;position:relative}
+  .cloud-trash-toggle:hover{background:rgba(244,67,54,.12);border-color:#f44336;color:#f44336;transform:translateY(-1px)}
+  .cloud-trash-toggle.active{background:linear-gradient(135deg,rgba(244,67,54,.2),rgba(200,30,30,.15));border-color:#f44336;color:#fff;box-shadow:0 0 12px rgba(244,67,54,.25)}
+
+  /* بنر سلة المحذوفات */
+  .trash-banner{background:linear-gradient(135deg,#1a0f0f,#120808);border:1px solid rgba(244,67,54,.3);border-radius:14px;padding:16px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:relative;overflow:hidden}
+  .trash-banner::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(244,67,54,.05),transparent);pointer-events:none}
+  .trash-banner-icon{font-size:2rem;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(244,67,54,.4))}
+  .trash-banner-info{flex:1;min-width:140px}
+  .trash-banner-title{color:#fff;font-weight:700;font-size:.9rem;margin-bottom:3px}
+  .trash-banner-sub{color:#888;font-size:.72rem;line-height:1.5}
+  .trash-banner-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .trash-restore-all-btn{background:linear-gradient(135deg,#1a4a1f,#2e7d32);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:.8rem;font-weight:700;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .trash-restore-all-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+  .trash-empty-all-btn{background:transparent;color:#f44336;border:1px solid rgba(244,67,54,.4);border-radius:8px;padding:8px 14px;font-size:.8rem;font-weight:600;cursor:pointer;transition:.2s;white-space:nowrap}
+  .trash-empty-all-btn:hover{background:rgba(244,67,54,.12);border-color:#f44336}
+
+  /* صف الاستعادة في الجدول */
+  .restore-row-btn{background:linear-gradient(135deg,#1a4a1f,#2e7d32);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:.75rem;font-weight:700;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+  .restore-row-btn:hover{filter:brightness(1.2);transform:translateY(-1px)}
   .cloud-row-selected td{background:rgba(74,158,255,.08)!important}
   .cloud-row-cb{width:18px;height:18px;accent-color:#4a9eff;cursor:pointer}
   #cloud-select-btn.active{background:#1e3a5f;color:#4a9eff;border-color:#4a9eff}
@@ -529,12 +551,16 @@ window.Dexie = Dexie;
   <div class="cloud-section">
     <div class="cloud-header">
       <div>
-        <div class="cloud-title">☁️ تاريخ العمليات السحابية</div>
+        <div class="cloud-title" id="cloud-section-title">☁️ تاريخ العمليات السحابية</div>
         <div class="cloud-status"><span class="cloud-dot" id="cloud-dot"></span><span id="cloud-status-text" style="color:#555">جاري الاتصال...</span></div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        <button class="cloud-refresh" onclick="loadCloudHistory()">↻ تحديث</button>
-        <button class="cloud-refresh" id="cloud-trash-btn" onclick="toggleTrashView()" title="عرض المحذوفات واستعادتها">🗑️ المحذوفات <span id="trash-badge" style="display:none;background:#f44336;color:#fff;border-radius:10px;padding:1px 7px;font-size:.7rem;margin-right:4px;font-weight:700"></span></button>
+        <button class="cloud-refresh" onclick="loadCloudHistory()" id="cloud-refresh-btn">↻ تحديث</button>
+        <button class="cloud-trash-toggle" id="cloud-trash-btn" onclick="toggleTrashView()">
+          <span id="trash-btn-icon">🗑</span>
+          <span id="trash-btn-label">المحذوفات</span>
+          <span id="trash-badge" style="display:none;background:#f44336;color:#fff;border-radius:10px;padding:1px 7px;font-size:.68rem;font-weight:700;margin-right:2px"></span>
+        </button>
         <button class="cloud-refresh" id="cloud-toggle-btn" onclick="toggleCloud()">🙈 إخفاء</button>
       </div>
     </div>
@@ -1035,6 +1061,50 @@ async function restoreCloud(id){
   }catch(e){ console.error(e); }
 }
 
+async function restoreAllDeleted(){
+  const confirmed = await showConfirm(
+    `<div style="text-align:center">
+      <div style="font-size:2.2rem;margin-bottom:10px">♻️</div>
+      <div style="color:#fff;font-size:.92rem">سيتم استعادة <strong style="color:#4caf50">جميع العمليات المحذوفة</strong></div>
+      <div style="color:#888;font-size:.8rem;margin-top:8px">ستعود لقائمة العمليات السحابية</div>
+    </div>`,
+    {title:'استعادة الكل', icon:'', yesText:'♻️ استعد الكل', noText:'إلغاء'}
+  );
+  if(!confirmed) return;
+  const userFilter = AUTH?.username ? `&user_name=eq.${encodeURIComponent(AUTH.username)}` : '';
+  try{
+    const res = await fetch(
+      SUPABASE_URL+'/rest/v1/exchangerat?deleted_at=not.is.null'+userFilter,
+      {method:'PATCH', headers:{...SB_HEADERS,'Prefer':'return=minimal'}, body:JSON.stringify({deleted_at:null})}
+    );
+    if(!res.ok){ showToast('⚠️ فشل في الاستعادة','warn'); return; }
+    showToast('✅ تمت استعادة جميع العمليات');
+    loadCloudHistory();
+  }catch(e){ console.error(e); }
+}
+
+async function emptyTrash(){
+  const confirmed = await showConfirm(
+    `<div style="text-align:center">
+      <div style="font-size:2.2rem;margin-bottom:10px">⛔</div>
+      <div style="color:#fff;font-size:.92rem;margin-bottom:8px">سيتم <strong style="color:#f44336">الحذف النهائي</strong> لجميع العمليات في السلة</div>
+      <div style="color:#888;font-size:.78rem">لا يمكن التراجع عن هذا الإجراء!</div>
+    </div>`,
+    {title:'تفريغ السلة', icon:'', yesText:'✖ تفريغ نهائي', noText:'إلغاء'}
+  );
+  if(!confirmed) return;
+  const userFilter = AUTH?.username ? `&user_name=eq.${encodeURIComponent(AUTH.username)}` : '';
+  try{
+    const res = await fetch(
+      SUPABASE_URL+'/rest/v1/exchangerat?deleted_at=not.is.null'+userFilter,
+      {method:'DELETE', headers:SB_HEADERS}
+    );
+    if(!res.ok){ showToast('⚠️ فشل التفريغ','warn'); return; }
+    showToast('🗑️ تم تفريغ السلة نهائياً');
+    loadCloudHistory();
+  }catch(e){ console.error(e); }
+}
+
 async function hardDeleteCloud(id){
   const confirmed = await showConfirm('⚠️ هذا <strong>حذف نهائي</strong> لا يمكن التراجع عنه!', {title:'حذف نهائي', icon:'⛔', yesText:'نعم، احذف نهائياً', noText:'إلغاء'});
   if(!confirmed)return;
@@ -1051,11 +1121,18 @@ async function hardDeleteCloud(id){
 
 function toggleTrashView(){
   cloudView = (cloudView==='active')?'trash':'active';
-  const btn=document.getElementById('cloud-trash-btn');
-  if(btn) btn.textContent = (cloudView==='trash') ? '↩ العودة' : '🗑 المحذوفات';
-  // إذا كان وضع التحديد مفعلاً، حدّث الأزرار حسب العرض الجديد
+  const isTrash = cloudView==='trash';
+  const btn = document.getElementById('cloud-trash-btn');
+  const icon = document.getElementById('trash-btn-icon');
+  const label = document.getElementById('trash-btn-label');
+  const title = document.getElementById('cloud-section-title');
+  const refreshBtn = document.getElementById('cloud-refresh-btn');
+  if(btn) btn.classList.toggle('active', isTrash);
+  if(icon) icon.textContent = isTrash ? '↩' : '🗑';
+  if(label) label.textContent = isTrash ? 'العودة للعمليات' : 'المحذوفات';
+  if(title) title.textContent = isTrash ? '🗑️ سلة المحذوفات' : '☁️ تاريخ العمليات السحابية';
+  if(refreshBtn) refreshBtn.style.display = isTrash ? 'none' : '';
   if(cloudSelectMode){
-    const isTrash = cloudView==='trash';
     const delBtn = document.getElementById('bulk-delete-btn');
     const restoreBtn = document.getElementById('bulk-restore-btn');
     const hardDelBtn = document.getElementById('bulk-hard-delete-btn');
@@ -1093,18 +1170,27 @@ async function loadCloudHistory(){
     statusTxt.style.color='#4caf50';
     if(!data||!data.length){
       if(isTrash){
-        el.innerHTML='<div style="background:linear-gradient(135deg,#1a1a2e,#0d1117);border:1px solid #2a2a3e;border-radius:12px;padding:28px;text-align:center"><div style="font-size:2.5rem;margin-bottom:10px">🗑️</div><div style="color:#666;font-size:.9rem">سلة المحذوفات فارغة</div></div>';
+        el.innerHTML=`
+          <div style="text-align:center;padding:40px 20px">
+            <div style="font-size:3.5rem;margin-bottom:12px;filter:grayscale(.3)">🗑️</div>
+            <div style="color:#555;font-size:.95rem;font-weight:600;margin-bottom:4px">سلة المحذوفات فارغة</div>
+            <div style="color:#444;font-size:.78rem">لا توجد عمليات محذوفة حالياً</div>
+          </div>`;
       } else {
         el.innerHTML='<div class="cloud-empty">لا توجد عمليات سحابية بعد</div>';
       }
       return;
     }
     const trashBanner = isTrash ? `
-      <div style="background:linear-gradient(135deg,#1a1a2e,#12121f);border:1px solid #2a2a4a;border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div style="font-size:1.6rem">🗑️</div>
-        <div style="flex:1;min-width:160px">
-          <div style="color:#fff;font-weight:700;font-size:.88rem;margin-bottom:2px">سلة المحذوفات</div>
-          <div style="color:#888;font-size:.72rem">محفوظة <strong style="color:#f9a825">30 يومًا</strong> قبل الحذف التلقائي</div>
+      <div class="trash-banner">
+        <div class="trash-banner-icon">🗑️</div>
+        <div class="trash-banner-info">
+          <div class="trash-banner-title">سلة المحذوفات • ${data.length} عملية</div>
+          <div class="trash-banner-sub">تُحفظ تلقائياً لمدة <strong style="color:#f9a825">30 يومًا</strong> ثم تُحذف نهائياً</div>
+        </div>
+        <div class="trash-banner-actions">
+          <button class="trash-restore-all-btn" onclick="restoreAllDeleted()">♻️ استعادة الكل</button>
+          <button class="trash-empty-all-btn" onclick="emptyTrash()">🗑 تفريغ السلة</button>
         </div>
       </div>` : '';
     el.innerHTML= trashBanner + `<table class="cloud-table">
@@ -1133,9 +1219,11 @@ async function loadCloudHistory(){
         }
         const cbCell = `<td style="text-align:center"><input type="checkbox" class="cloud-row-cb" data-id="${r.id}" ${selectedCloudIds.has(r.id)?'checked':''} onchange="toggleRowSelect(this)" onclick="event.stopPropagation()" style="width:16px;height:16px;accent-color:#4a9eff;cursor:pointer"></td>`;
         const actions = isTrash
-          ? `<td style="white-space:nowrap"><button class="cloud-act restore" onclick="restoreCloud(${r.id})" title="استعادة">♻️</button>
-             <button class="cloud-act del" onclick="hardDeleteCloud(${r.id})" title="حذف نهائي">✖</button></td>`
-          : `<td style="white-space:nowrap"><button class="cloud-act del" onclick="softDeleteCloud(${r.id})" title="حذف">🗑️</button></td>`;
+          ? `<td style="white-space:nowrap">
+               <button class="restore-row-btn" onclick="event.stopPropagation();restoreCloud(${r.id})" title="استعادة">♻️ استعادة</button>
+               <button class="cloud-act del" onclick="event.stopPropagation();hardDeleteCloud(${r.id})" title="حذف نهائي" style="margin-top:3px">✖</button>
+             </td>`
+          : `<td style="white-space:nowrap"><button class="cloud-act del" onclick="event.stopPropagation();softDeleteCloud(${r.id})" title="حذف">🗑️</button></td>`;
         const isSelected = selectedCloudIds.has(r.id);
         return `<tr class="${isSelected?'cloud-row-selected':''}" style="cursor:pointer" onclick="const cb=this.querySelector('.cloud-row-cb');if(cb){cb.checked=!cb.checked;toggleRowSelect(cb)}">
           ${cbCell}
