@@ -240,6 +240,35 @@ window.Dexie = Dexie;
   .user-bar .user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#4a9eff,#a78bfa);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.9rem}
   .logout-btn{background:transparent;border:1px solid #f44336;color:#f44336;border-radius:8px;padding:5px 12px;font-size:.78rem;cursor:pointer;transition:.2s}
   .logout-btn:hover{background:#f44336;color:#fff}
+  .change-pass-btn{background:transparent;border:1px solid #a78bfa;color:#a78bfa;border-radius:8px;padding:5px 12px;font-size:.78rem;cursor:pointer;transition:.2s;margin-left:6px}
+  .change-pass-btn:hover{background:#a78bfa;color:#fff}
+
+  /* شاشة إعادة تعيين كلمة المرور */
+  .reset-screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:100001;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);padding:20px}
+  .reset-screen.show{display:flex!important}
+  .reset-box{background:#1e1e2e;border:1px solid #2a2a3e;border-radius:20px;padding:32px 28px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.6);position:relative;overflow:hidden}
+  .reset-box::before{content:"";position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:conic-gradient(from 0deg,transparent,rgba(167,139,250,.08),transparent 30%);animation:spin 8s linear infinite;z-index:0}
+  .reset-box>*{position:relative;z-index:1}
+  .reset-step{display:none}.reset-step.active{display:block}
+  .reset-hint-box{background:#13131f;border:1px solid #f9a825;border-radius:10px;padding:14px 16px;margin:14px 0;font-size:.95rem;color:#f9a825;text-align:center;direction:rtl;min-height:44px}
+
+  /* مودال تغيير كلمة المرور من داخل التطبيق */
+  .chpass-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:10001;opacity:0;pointer-events:none;transition:opacity .25s}
+  .chpass-overlay.show{opacity:1;pointer-events:all}
+  .chpass-box{background:#1e1e2e;border:1px solid #2a2a3e;border-radius:18px;padding:28px 24px;max-width:360px;width:90%;transform:scale(.92) translateY(16px);transition:transform .25s}
+  .chpass-overlay.show .chpass-box{transform:scale(1) translateY(0)}
+  .chpass-title{font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:16px;text-align:center}
+  .chpass-field{margin-bottom:13px}
+  .chpass-field label{display:block;font-size:.78rem;color:#aaa;margin-bottom:5px;font-weight:600}
+  .chpass-field input{width:100%;background:#13131f;border:1px solid #2a2a3e;border-radius:9px;padding:11px 14px;color:#fff;font-size:.95rem;transition:.2s}
+  .chpass-field input:focus{outline:none;border-color:#a78bfa;box-shadow:0 0 0 3px rgba(167,139,250,.15)}
+  .chpass-msg{font-size:.82rem;text-align:center;min-height:18px;margin-bottom:10px}
+  .chpass-msg.err{color:#f44336}.chpass-msg.ok{color:#4caf50}
+  .chpass-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+  .chpass-btn{border:none;border-radius:10px;padding:11px;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s}
+  .chpass-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+  .chpass-btn.save{background:linear-gradient(135deg,#6a35cc,#a78bfa);color:#fff}
+  .chpass-btn.cancel{background:#2a2a3e;color:#aaa;border:1px solid #3a3a5e}
 
   /* Mobile Responsive */
   @media (max-width: 480px){
@@ -307,15 +336,90 @@ window.Dexie = Dexie;
         <label>تلميح لكلمة المرور <span style="color:#666;font-weight:400">(يساعدك إذا نسيتها)</span></label>
         <input type="text" id="auth-hint" placeholder="مثال: اسم قطّتي">
       </div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:#bbb;cursor:pointer;margin:6px 0 10px;user-select:none">
-        <input type="checkbox" id="auth-remember" checked style="width:16px;height:16px;accent-color:#4a9eff;cursor:pointer">
-        <span>تذكّرني — إبقاء الدخول لمدة 30 يوماً</span>
+      <label style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:#bbb;cursor:pointer;margin:6px 0 10px;user-select:none;padding:8px 10px;background:#13131f;border-radius:8px;border:1px solid #2a2a3e" onclick="document.getElementById('auth-remember').click();event.stopPropagation()">
+        <span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;border:2px solid #4a9eff;background:#13131f;flex-shrink:0;transition:.2s" id="remember-visual">
+          <svg id="remember-check" width="12" height="12" viewBox="0 0 12 12" style="display:none"><polyline points="1.5,6 5,9.5 10.5,2.5" stroke="#4a9eff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <input type="checkbox" id="auth-remember" checked style="position:absolute;opacity:0;width:0;height:0;pointer-events:none" onchange="updateRememberVisual()">
+        <span>تذكّرني — إبقاء الدخول بشكل دائم</span>
       </label>
       <button type="button" class="auth-btn" id="auth-submit" onclick="submitAuth()">دخول</button>
       <div style="text-align:center;margin-top:10px">
-        <a href="#" id="forgot-link" onclick="event.preventDefault();showHint();" style="color:#4a9eff;font-size:.82rem;text-decoration:none">نسيت كلمة المرور؟</a>
+        <a href="#" id="forgot-link" onclick="event.preventDefault();openResetScreen();" style="color:#4a9eff;font-size:.82rem;text-decoration:none">نسيت كلمة المرور؟</a>
       </div>
       <div class="auth-msg" id="auth-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- شاشة إعادة تعيين كلمة المرور -->
+<div class="reset-screen" id="reset-screen">
+  <div class="reset-box">
+    <div class="auth-logo">🔑</div>
+    <div class="auth-title">إعادة تعيين كلمة المرور</div>
+
+    <!-- الخطوة 1: إظهار التلميح -->
+    <div class="reset-step active" id="reset-step1">
+      <div class="auth-sub">اكتب اسم المستخدم لرؤية التلميح</div>
+      <div class="auth-field">
+        <label>اسم المستخدم</label>
+        <input type="text" id="reset-user" placeholder="اسم المستخدم" autocomplete="username"
+          oninput="resetMsg('')"
+          onkeydown="if(event.key==='Enter')fetchResetHint()">
+      </div>
+      <button class="auth-btn" onclick="fetchResetHint()" id="reset-hint-btn">🔍 اكشف التلميح</button>
+      <div class="reset-hint-box" id="reset-hint-box" style="display:none"></div>
+      <div class="auth-msg" id="reset-msg1"></div>
+      <div style="text-align:center;margin-top:14px">
+        <a href="#" onclick="event.preventDefault();closeResetScreen()" style="color:#888;font-size:.82rem;text-decoration:none">← العودة لتسجيل الدخول</a>
+      </div>
+    </div>
+
+    <!-- الخطوة 2: إدخال كلمة مرور جديدة -->
+    <div class="reset-step" id="reset-step2">
+      <div class="auth-sub" id="reset-sub2">أدخل كلمة المرور الجديدة</div>
+      <div class="auth-field">
+        <label>كلمة المرور الجديدة</label>
+        <input type="password" id="reset-newpass" placeholder="••••••••" minlength="4" autocomplete="new-password"
+          onkeydown="if(event.key==='Enter')submitResetPassword()">
+      </div>
+      <div class="auth-field">
+        <label>تأكيد كلمة المرور</label>
+        <input type="password" id="reset-confirmpass" placeholder="••••••••" minlength="4" autocomplete="new-password"
+          onkeydown="if(event.key==='Enter')submitResetPassword()">
+      </div>
+      <button class="auth-btn" onclick="submitResetPassword()" id="reset-save-btn">✅ حفظ كلمة المرور</button>
+      <div class="auth-msg" id="reset-msg2"></div>
+      <div style="text-align:center;margin-top:14px">
+        <a href="#" onclick="event.preventDefault();closeResetScreen()" style="color:#888;font-size:.82rem;text-decoration:none">← العودة لتسجيل الدخول</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- مودال تغيير كلمة المرور من داخل التطبيق -->
+<div class="chpass-overlay" id="chpass-overlay">
+  <div class="chpass-box">
+    <div class="chpass-title">🔐 تغيير كلمة المرور</div>
+    <div class="chpass-field">
+      <label>كلمة المرور الحالية</label>
+      <input type="password" id="chpass-current" placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')submitChangePassword()">
+    </div>
+    <div class="chpass-field">
+      <label>كلمة المرور الجديدة</label>
+      <input type="password" id="chpass-new" placeholder="••••••••" minlength="4" autocomplete="new-password"
+        onkeydown="if(event.key==='Enter')submitChangePassword()">
+    </div>
+    <div class="chpass-field">
+      <label>تأكيد كلمة المرور الجديدة</label>
+      <input type="password" id="chpass-confirm" placeholder="••••••••" minlength="4" autocomplete="new-password"
+        onkeydown="if(event.key==='Enter')submitChangePassword()">
+    </div>
+    <div class="chpass-msg" id="chpass-msg"></div>
+    <div class="chpass-btns">
+      <button class="chpass-btn save" onclick="submitChangePassword()" id="chpass-save-btn">حفظ</button>
+      <button class="chpass-btn cancel" onclick="closeChangePassword()">إلغاء</button>
     </div>
   </div>
 </div>
@@ -327,6 +431,7 @@ window.Dexie = Dexie;
       <div><div style="color:#fff;font-weight:600" id="user-email">—</div><div style="color:#666;font-size:.7rem">مستخدم مُسجّل</div></div>
     </div>
     <button class="logout-btn" onclick="logout()">خروج ↩</button>
+    <button class="change-pass-btn" onclick="openChangePassword()">🔐 تغيير كلمة المرور</button>
   </div>
   <h1>💱 سعر الصرف</h1>
 
@@ -614,16 +719,31 @@ async function submitAuth(){
   }
 }
 
+function updateRememberVisual(){
+  const cb = document.getElementById('auth-remember');
+  const svg = document.getElementById('remember-check');
+  const box = document.getElementById('remember-visual');
+  if(cb && svg && box){
+    svg.style.display = cb.checked ? '' : 'none';
+    box.style.background = cb.checked ? 'rgba(74,158,255,0.15)' : '#13131f';
+    box.style.borderColor = cb.checked ? '#4a9eff' : '#555';
+  }
+}
+// تشغيل الوضع المرئي عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', updateRememberVisual);
+
 function loginSuccess(user){
-  const remember = document.getElementById('auth-remember')?.checked;
-  const ttl = remember ? 30*24*60*60*1000 : 12*60*60*1000; // 30ي أو 12س
+  const remember = document.getElementById('auth-remember')?.checked !== false;
   AUTH = {
     id: user.id || user.username || user.user_name || 'user',
     username: user.username || user.user_name || 'user',
-    expires_at: Date.now()+ttl
+    remember: remember,
+    // إذا تذكّرني: انتهاء بعد 10 سنوات، وإلا 8 ساعات
+    expires_at: remember ? (Date.now() + 10*365*24*60*60*1000) : (Date.now() + 8*60*60*1000)
   };
-  SafeStore.remove('sb_auth');
   SafeStore.set('sb_auth', JSON.stringify(AUTH));
+  // حفظ اسم المستخدم دائماً للإظهار في شاشة الدخول
+  SafeStore.set('sb_last_user', AUTH.username);
   setAuthMsg('✅ تم الدخول بنجاح','ok');
   setTimeout(showApp, 300);
 }
@@ -647,12 +767,166 @@ async function showHint(){
   }
 }
 
+// ===== إعادة تعيين كلمة المرور =====
+let _resetUsername = '';
+
+function openResetScreen(){
+  const u = document.getElementById('auth-user').value.trim().toLowerCase();
+  document.getElementById('reset-user').value = u;
+  document.getElementById('reset-hint-box').style.display = 'none';
+  document.getElementById('reset-hint-box').textContent = '';
+  resetMsg('','1'); resetMsg('','2');
+  document.getElementById('reset-newpass').value='';
+  document.getElementById('reset-confirmpass').value='';
+  showResetStep(1);
+  document.getElementById('reset-screen').classList.add('show');
+}
+
+function closeResetScreen(){
+  document.getElementById('reset-screen').classList.remove('show');
+  _resetUsername='';
+}
+
+function showResetStep(n){
+  document.getElementById('reset-step1').classList.toggle('active', n===1);
+  document.getElementById('reset-step2').classList.toggle('active', n===2);
+}
+
+function resetMsg(msg, step='1', type=''){
+  const el=document.getElementById('reset-msg'+step);
+  if(el){ el.innerHTML=msg; el.className='auth-msg '+(msg?(type||'err'):''); }
+}
+
+async function fetchResetHint(){
+  const username = document.getElementById('reset-user').value.trim().toLowerCase();
+  if(!username){ resetMsg('⚠️ اكتب اسم المستخدم أولاً'); return; }
+  const btn = document.getElementById('reset-hint-btn');
+  btn.disabled=true; btn.textContent='⏳ جاري...';
+  resetMsg('');
+  try{
+    const res = await fetch(
+      SUPABASE_URL+`/rest/v1/users?username=eq.${encodeURIComponent(username)}&select=password_hint`,
+      { headers: getSBHeaders() }
+    );
+    const rows = await res.json();
+    if(!rows.length){ resetMsg('⚠️ اسم المستخدم غير موجود'); return; }
+    const hint = rows[0].password_hint || rows[0].hint || null;
+    const hintBox = document.getElementById('reset-hint-box');
+    hintBox.style.display='';
+    if(hint){
+      hintBox.innerHTML='💡 تلميح: <strong>'+hint+'</strong>';
+    } else {
+      hintBox.innerHTML='<span style="color:#888">لا يوجد تلميح محفوظ</span>';
+    }
+    _resetUsername = username;
+    document.getElementById('reset-sub2').textContent = 'كلمة مرور جديدة لـ: '+username;
+    // انتقل للخطوة 2 بعد لحظة
+    setTimeout(()=>showResetStep(2), 900);
+  }catch(e){
+    resetMsg('⚠️ خطأ: '+e.message);
+  }finally{
+    btn.disabled=false; btn.textContent='🔍 اكشف التلميح';
+  }
+}
+
+async function submitResetPassword(){
+  const newpass   = document.getElementById('reset-newpass').value;
+  const confirm   = document.getElementById('reset-confirmpass').value;
+  if(!newpass||newpass.length<4){ resetMsg('⚠️ كلمة المرور يجب أن تكون 4 أحرف على الأقل','2','err'); return; }
+  if(newpass!==confirm){ resetMsg('⚠️ كلمتا المرور غير متطابقتين','2','err'); return; }
+  const btn=document.getElementById('reset-save-btn');
+  btn.disabled=true; btn.textContent='⏳ جاري الحفظ...';
+  resetMsg('','2');
+  try{
+    const pwdHash = await hashPwd(newpass);
+    const res = await fetch(
+      SUPABASE_URL+`/rest/v1/users?username=eq.${encodeURIComponent(_resetUsername)}`,
+      { method:'PATCH', headers:{...getSBHeaders(),'Prefer':'return=minimal'}, body:JSON.stringify({password_hash:pwdHash}) }
+    );
+    if(!res.ok){ const t=await res.text(); resetMsg('⚠️ فشل التحديث: '+t,'2','err'); return; }
+    resetMsg('✅ تم تغيير كلمة المرور بنجاح! سيتم توجيهك للدخول...','2','ok');
+    setTimeout(()=>{ closeResetScreen(); }, 1800);
+  }catch(e){
+    resetMsg('⚠️ خطأ: '+e.message,'2','err');
+  }finally{
+    btn.disabled=false; btn.textContent='✅ حفظ كلمة المرور';
+  }
+}
+
+// ===== تغيير كلمة المرور من داخل التطبيق =====
+function openChangePassword(){
+  document.getElementById('chpass-current').value='';
+  document.getElementById('chpass-new').value='';
+  document.getElementById('chpass-confirm').value='';
+  setChpassMsg('');
+  document.getElementById('chpass-overlay').classList.add('show');
+  setTimeout(()=>document.getElementById('chpass-current').focus(),200);
+}
+
+function closeChangePassword(){
+  document.getElementById('chpass-overlay').classList.remove('show');
+}
+
+function setChpassMsg(msg,type=''){
+  const el=document.getElementById('chpass-msg');
+  el.innerHTML=msg; el.className='chpass-msg '+(msg?type:'');
+}
+
+async function submitChangePassword(){
+  const current = document.getElementById('chpass-current').value;
+  const newpass  = document.getElementById('chpass-new').value;
+  const confirm  = document.getElementById('chpass-confirm').value;
+  if(!current){ setChpassMsg('⚠️ أدخل كلمة المرور الحالية','err'); return; }
+  if(!newpass||newpass.length<4){ setChpassMsg('⚠️ كلمة المرور الجديدة يجب أن تكون 4 أحرف على الأقل','err'); return; }
+  if(newpass!==confirm){ setChpassMsg('⚠️ كلمتا المرور الجديدة غير متطابقتين','err'); return; }
+  const btn=document.getElementById('chpass-save-btn');
+  btn.disabled=true; btn.textContent='⏳ جاري التحقق...';
+  setChpassMsg('');
+  try{
+    const username = AUTH?.username;
+    const currentHash = await hashPwd(current);
+    // تحقق من كلمة المرور الحالية
+    const res = await fetch(
+      SUPABASE_URL+`/rest/v1/users?username=eq.${encodeURIComponent(username)}&select=password_hash`,
+      { headers: getSBHeaders() }
+    );
+    const rows = await res.json();
+    if(!rows.length){ setChpassMsg('⚠️ خطأ: المستخدم غير موجود','err'); return; }
+    if(rows[0].password_hash !== currentHash){ setChpassMsg('⚠️ كلمة المرور الحالية غير صحيحة','err'); return; }
+    // تحديث كلمة المرور
+    const newHash = await hashPwd(newpass);
+    const upd = await fetch(
+      SUPABASE_URL+`/rest/v1/users?username=eq.${encodeURIComponent(username)}`,
+      { method:'PATCH', headers:{...getSBHeaders(),'Prefer':'return=minimal'}, body:JSON.stringify({password_hash:newHash}) }
+    );
+    if(!upd.ok){ const t=await upd.text(); setChpassMsg('⚠️ فشل التحديث: '+t,'err'); return; }
+    setChpassMsg('✅ تم تغيير كلمة المرور بنجاح!','ok');
+    setTimeout(()=>closeChangePassword(), 1500);
+  }catch(e){
+    setChpassMsg('⚠️ خطأ: '+e.message,'err');
+  }finally{
+    btn.disabled=false; btn.textContent='حفظ';
+  }
+}
+
 async function logout(){
   const confirmed = await showConfirm('هل تريد تسجيل الخروج من حسابك؟', {title:'تسجيل الخروج', icon:'↩️', yesText:'نعم، خروج', noText:'إلغاء'});
   if(!confirmed)return;
+  const lastUser = AUTH?.username;
   AUTH=null;
   SafeStore.remove('sb_auth');
-  location.reload();
+  // أظهر شاشة الدخول مع اسم المستخدم
+  document.getElementById('app-container').style.display='none';
+  document.getElementById('auth-screen').style.display='';
+  if(lastUser){
+    const inp = document.getElementById('auth-user');
+    if(inp){ inp.value=lastUser; inp.focus(); }
+    // ضع المؤشر في حقل كلمة المرور
+    setTimeout(()=>{ const p=document.getElementById('auth-pass'); if(p) p.focus(); },100);
+  }
+  setAuthMsg('');
+  // تأكد من إظهار تبويب الدخول
+  switchAuthTab('login');
 }
 
 function showApp(){
@@ -667,12 +941,23 @@ function showApp(){
 
 function requireAuth(){
   if(AUTH && AUTH.username && (AUTH.expires_at||0) > Date.now()){
+    // إذا كان تذكّرني مفعّلاً، جدّد الانتهاء تلقائياً
+    if(AUTH.remember){
+      AUTH.expires_at = Date.now() + 10*365*24*60*60*1000;
+      SafeStore.set('sb_auth', JSON.stringify(AUTH));
+    }
     showApp();
     return true;
   }
   if(AUTH){ SafeStore.remove('sb_auth'); AUTH=null; }
   document.getElementById('auth-screen').style.display='';
   document.getElementById('app-container').style.display='none';
+  // أظهر اسم المستخدم الأخير في حقل الإدخال
+  const lastUser = SafeStore.get('sb_last_user');
+  if(lastUser){
+    const inp = document.getElementById('auth-user');
+    if(inp) inp.value = lastUser;
+  }
   return false;
 }
 // ================= /AUTH =================
@@ -1543,6 +1828,8 @@ async function bulkHardDeleteSelected(){
 }
 
 requireAuth();
+// تفعيل المظهر المرئي لزر التذكّر
+setTimeout(updateRememberVisual, 50);
 fetchLiveRates(); // جلب تلقائي عند تحميل الصفحة
 setInterval(()=>{ if(AUTH) fetchLiveRates(); }, 10*60*1000); // تحديث تلقائي كل 10 دقائق
 
