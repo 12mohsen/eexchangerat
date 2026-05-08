@@ -636,6 +636,7 @@ const SafeStore = {
   - SUPABASE_KEY مفتاح anon عام، الحماية تأتي من RLS في Supabase.
   - للحماية الأقوى: استخدم Supabase Edge Function للتحقق من كلمة المرور.
 */
+const APP_ORIGIN = 'exchangerat';
 const SUPABASE_URL = 'https://tvbuvwjkojhqcxhyehfs.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2YnV2d2prb2pocWN4aHllaGZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MDE4MTUsImV4cCI6MjA5MjI3NzgxNX0.egwryYwKu_Bicl_koaYXaKGBoxz42c6k4VkMD9aZSWQ';
 
@@ -693,30 +694,30 @@ async function submitAuth(){
     if(authMode==='signup'){
       // تحقق عالمي: الاسم يجب أن يكون غير موجود في أي تطبيق
       const chk = await fetch(
-        SUPABASE_URL+`/rest/v1/users?username=eq.${encodeURIComponent(username)}&select=app_origin&limit=1`,
+        SUPABASE_URL+`/rest/v1/users?user_id=eq.${encodeURIComponent(username)}&select=created_from&limit=1`,
         { headers: getSBHeaders() }
       );
       const chkRows = await chk.json();
       if(chk.ok && Array.isArray(chkRows) && chkRows.length){
-        setAuthMsg('⚠️ اسم المستخدم موجود مسبقاً','err'); return;
+        setAuthMsg('⚠️ هذا الاسم محجوز في نظام تطبيقات أبو محسن الموحد','err'); return;
       }
       const res = await fetch(SUPABASE_URL+'/rest/v1/users', {
         method:'POST',
         headers:{ ...getSBHeaders(), 'Prefer':'return=representation' },
-        body: JSON.stringify({ username, password_hash:pwdHash, password_hint:hint||null, app_origin: 'سعر الصرف' })
+        body: JSON.stringify({ user_id: username, pass_hash:pwdHash, password_hint:hint||null, created_from: APP_ORIGIN })
       });
       const data = await res.json();
       if(!res.ok){
         console.error('Signup error full:', JSON.stringify(data));
         if(data?.code==='23505'||data?.message?.includes('duplicate')){
-          setAuthMsg('⚠️ اسم المستخدم موجود مسبقاً','err'); return;
+          setAuthMsg('⚠️ هذا الاسم محجوز في نظام تطبيقات أبو محسن الموحد','err'); return;
         }
         // عمود غير موجود - جرب بدون hint
         if(data?.message?.includes('hint')){
           const res2 = await fetch(SUPABASE_URL+'/rest/v1/users', {
             method:'POST',
             headers:{ ...getSBHeaders(), 'Prefer':'return=representation' },
-            body: JSON.stringify({ username, password_hash:pwdHash, app_origin: 'سعر الصرف' })
+            body: JSON.stringify({ user_id: username, pass_hash:pwdHash, created_from: APP_ORIGIN })
           });
           const data2 = await res2.json();
           if(!res2.ok){ setAuthMsg('⚠️ '+(data2?.message||'فشل إنشاء الحساب — تحقق من أعمدة جدول users'),'err'); return; }
@@ -730,9 +731,9 @@ async function submitAuth(){
       loginSuccess(user);
       return;
     }
-    // login — ابحث فقط ضمن مستخدمي هذا التطبيق (سعر الصرف)
+    // login — ابحث عن المستخدم في جدول users الموحد (بدون فلتر تطبيق)
     let res = await fetch(
-      SUPABASE_URL+`/rest/v1/users?username=eq.${encodeURIComponent(username)}&app_origin=eq.${encodeURIComponent('سعر الصرف')}&select=*`,
+      SUPABASE_URL+`/rest/v1/users?user_id=eq.${encodeURIComponent(username)}&select=*`,
       { headers: getSBHeaders() }
     );
     let rows = await res.json();
@@ -747,7 +748,7 @@ async function submitAuth(){
     }
     console.log('users row keys:', Object.keys(rows[0]||{}));
     const u = rows[0];
-    if(u.password_hash !== pwdHash){ setAuthMsg('⚠️ كلمة المرور غير صحيحة','err'); return; }
+    if(u.pass_hash !== pwdHash){ setAuthMsg('⚠️ كلمة المرور غير صحيحة','err'); return; }
     loginSuccess(u);
   }catch(e){
     console.error('Auth error:', e);
@@ -774,8 +775,8 @@ document.addEventListener('DOMContentLoaded', updateRememberVisual);
 function loginSuccess(user){
   const remember = document.getElementById('auth-remember')?.checked !== false;
   AUTH = {
-    id: user.id || user.username || user.user_name || 'user',
-    username: user.username || user.user_name || 'user',
+    id: user.id || user.user_id || user.username || 'user',
+    username: user.user_id || user.username || 'user',
     remember: remember,
     // إذا تذكّرني: انتهاء بعد 10 سنوات، وإلا 8 ساعات
     expires_at: remember ? (Date.now() + 10*365*24*60*60*1000) : (Date.now() + 8*60*60*1000)
@@ -793,11 +794,11 @@ async function showHint(){
   setAuthMsg('⏳ جاري البحث عن التلميح...');
   try{
     const res = await fetch(
-      SUPABASE_URL+`/rest/v1/users?username=eq.${encodeURIComponent(username)}&app_origin=eq.${encodeURIComponent('سعر الصرف')}&select=password_hint`,
+      SUPABASE_URL+`/rest/v1/users?user_id=eq.${encodeURIComponent(username)}&select=password_hint`,
       { headers: getSBHeaders() }
     );
     const rows = await res.json();
-    if(!rows.length){ setAuthMsg('⚠️ اسم المستخدم غير مسجّل في تطبيق سعر الصرف','err'); return; }
+    if(!rows.length){ setAuthMsg('⚠️ اسم المستخدم غير مسجّل','err'); return; }
     const hint = rows[0].password_hint || rows[0].hint;
     if(!hint){ setAuthMsg('💡 لا يوجد تلميح محفوظ لهذا الحساب','err'); return; }
     setAuthMsg('💡 تلميح: <strong style="color:#f9a825">'+hint+'</strong>','ok');
@@ -844,11 +845,11 @@ async function fetchResetHint(){
   resetMsg('');
   try{
     const res = await fetch(
-      SUPABASE_URL+`/rest/v1/users?username=eq.${encodeURIComponent(username)}&app_origin=eq.${encodeURIComponent('سعر الصرف')}&select=password_hint`,
+      SUPABASE_URL+`/rest/v1/users?user_id=eq.${encodeURIComponent(username)}&select=password_hint`,
       { headers: getSBHeaders() }
     );
     const rows = await res.json();
-    if(!rows.length){ resetMsg('⚠️ اسم المستخدم غير مسجّل في تطبيق سعر الصرف'); return; }
+    if(!rows.length){ resetMsg('⚠️ اسم المستخدم غير مسجّل'); return; }
     const hint = rows[0].password_hint || rows[0].hint || null;
     const hintBox = document.getElementById('reset-hint-box');
     hintBox.style.display='';
@@ -879,8 +880,8 @@ async function submitResetPassword(){
   try{
     const pwdHash = await hashPwd(newpass);
     const res = await fetch(
-      SUPABASE_URL+`/rest/v1/users?username=eq.${encodeURIComponent(_resetUsername)}&app_origin=eq.${encodeURIComponent('سعر الصرف')}`,
-      { method:'PATCH', headers:{...getSBHeaders(),'Prefer':'return=minimal'}, body:JSON.stringify({password_hash:pwdHash}) }
+      SUPABASE_URL+`/rest/v1/users?user_id=eq.${encodeURIComponent(_resetUsername)}`,
+      { method:'PATCH', headers:{...getSBHeaders(),'Prefer':'return=minimal'}, body:JSON.stringify({pass_hash:pwdHash}) }
     );
     if(!res.ok){ const t=await res.text(); resetMsg('⚠️ فشل التحديث: '+t,'2','err'); return; }
     resetMsg('✅ تم تغيير كلمة المرور بنجاح! سيتم توجيهك للدخول...','2','ok');
@@ -926,17 +927,17 @@ async function submitChangePassword(){
     const currentHash = await hashPwd(current);
     // تحقق من كلمة المرور الحالية
     const res = await fetch(
-      SUPABASE_URL+`/rest/v1/users?username=eq.${encodeURIComponent(username)}&app_origin=eq.${encodeURIComponent('سعر الصرف')}&select=password_hash`,
+      SUPABASE_URL+`/rest/v1/users?user_id=eq.${encodeURIComponent(username)}&select=pass_hash`,
       { headers: getSBHeaders() }
     );
     const rows = await res.json();
     if(!rows.length){ setChpassMsg('⚠️ خطأ: المستخدم غير موجود','err'); return; }
-    if(rows[0].password_hash !== currentHash){ setChpassMsg('⚠️ كلمة المرور الحالية غير صحيحة','err'); return; }
+    if(rows[0].pass_hash !== currentHash){ setChpassMsg('⚠️ كلمة المرور الحالية غير صحيحة','err'); return; }
     // تحديث كلمة المرور
     const newHash = await hashPwd(newpass);
     const upd = await fetch(
-      SUPABASE_URL+`/rest/v1/users?username=eq.${encodeURIComponent(username)}&app_origin=eq.${encodeURIComponent('سعر الصرف')}`,
-      { method:'PATCH', headers:{...getSBHeaders(),'Prefer':'return=minimal'}, body:JSON.stringify({password_hash:newHash}) }
+      SUPABASE_URL+`/rest/v1/users?user_id=eq.${encodeURIComponent(username)}`,
+      { method:'PATCH', headers:{...getSBHeaders(),'Prefer':'return=minimal'}, body:JSON.stringify({pass_hash:newHash}) }
     );
     if(!upd.ok){ const t=await upd.text(); setChpassMsg('⚠️ فشل التحديث: '+t,'err'); return; }
     setChpassMsg('✅ تم تغيير كلمة المرور بنجاح!','ok');
