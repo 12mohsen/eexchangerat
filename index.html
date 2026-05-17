@@ -1004,22 +1004,40 @@ function requireAuth(){
 
 async function saveToSupabase(tx){
   try{
-    const res = await fetch(SUPABASE_URL+'/rest/v1/exchangerat', {
+    const payload = {
+      base_amount      : parseFloat(tx.sar),
+      converted_amount : parseFloat(tx.foreign),
+      exchange_rate    : parseFloat(tx.rate),
+      arabic_text      : tx.tafqeet || '',
+      target_currency  : tx.currency,
+      user_name        : AUTH?.username || null,
+      created_from     : APP_ORIGIN
+    };
+    let res = await fetch(SUPABASE_URL+'/rest/v1/exchangerat', {
       method:'POST',
       headers: SB_HEADERS,
-      body: JSON.stringify({
-        base_amount      : parseFloat(tx.sar),
-        converted_amount : parseFloat(tx.foreign),
-        exchange_rate    : parseFloat(tx.rate),
-        arabic_text      : tx.tafqeet || '',
-        target_currency  : tx.currency,
-        user_name        : AUTH?.username || null
-      })
+      body: JSON.stringify(payload)
     });
-    const respText = await res.text();
-    console.log('Supabase insert status:', res.status, res.statusText, respText);
-    if(!res.ok){ console.error('Supabase insert error:',respText); }
-    else{ console.log('✅ Saved to Supabase'); }
+    // If created_from column doesn't exist, retry without it
+    if(!res.ok){
+      const errText = await res.text();
+      if(errText.includes('created_from')){
+        delete payload.created_from;
+        res = await fetch(SUPABASE_URL+'/rest/v1/exchangerat', {
+          method:'POST',
+          headers: SB_HEADERS,
+          body: JSON.stringify(payload)
+        });
+        const respText2 = await res.text();
+        console.log('Supabase insert (retry) status:', res.status, res.statusText, respText2);
+        if(!res.ok){ console.error('Supabase insert error:',respText2); }
+        else{ console.log('✅ Saved to Supabase (without created_from)'); }
+      } else {
+        console.error('Supabase insert error:',errText);
+      }
+    } else {
+      console.log('✅ Saved to Supabase with created_from');
+    }
   }catch(e){ console.error('saveToSupabase exception:',e); }
 }
 
